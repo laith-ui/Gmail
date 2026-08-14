@@ -34,8 +34,9 @@ var CONFIG = {
 
   // Claude API (key lives in Script Properties, not here - see README).
   CLAUDE_MODEL: 'claude-sonnet-5',
-  CLAUDE_MAX_TOKENS: 600,
-  MAX_THREAD_CHARS: 6000, // trims very long threads before sending to the model
+  CLAUDE_MAX_TOKENS: 800,
+  THREAD_MESSAGE_LOOKBACK: 6, // how many recent messages in the thread to give as context
+  MAX_THREAD_CHARS: 9000, // trims very long threads before sending to the model
 
   MY_EMAIL: Session.getActiveUser().getEmail(),
 };

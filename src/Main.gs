@@ -78,6 +78,25 @@ function looksAutomated_(message) {
 }
 
 /**
+ * Email addresses on a message's To/Cc lines, excluding Laith's own address
+ * and de-duplicated. A non-empty result means other people are part of this
+ * conversation, so the reply should go to everyone, not just the sender.
+ */
+function otherRecipients_(message) {
+  var raw = (message.getTo() || '') + ',' + (message.getCc() || '');
+  var emails = raw.match(/[^\s<>,"]+@[^\s<>,"]+/g) || [];
+  var seen = {};
+  var myEmail = CONFIG.MY_EMAIL.toLowerCase();
+
+  return emails.filter(function (addr) {
+    var lower = addr.toLowerCase();
+    if (lower === myEmail || seen[lower]) return false;
+    seen[lower] = true;
+    return true;
+  });
+}
+
+/**
  * For inbox threads that aren't covered by a skip rule, aren't already
  * handled, and are actually awaiting a reply from Laith, asks Claude for a
  * draft and attaches it to the thread. Never sends anything - drafts only.
@@ -109,13 +128,19 @@ function processNeedsReplyDrafts_() {
       if (looksAutomated_(last)) return;
 
       var threadText = messages
-        .slice(-3)
+        .slice(-CONFIG.THREAD_MESSAGE_LOOKBACK)
         .map(function (m) { return 'From: ' + m.getFrom() + '\n' + m.getPlainBody(); })
         .join('\n\n---\n\n')
         .slice(-CONFIG.MAX_THREAD_CHARS);
 
-      var draftBody = draftReplyWithClaude_(threadText, thread.getFirstMessageSubject());
-      thread.createDraftReply(draftBody);
+      var others = otherRecipients_(last);
+      var draftBody = draftReplyWithClaude_(threadText, thread.getFirstMessageSubject(), others);
+
+      if (others.length) {
+        thread.createDraftReplyAll(draftBody);
+      } else {
+        thread.createDraftReply(draftBody);
+      }
       thread.addLabel(needsReplyLabel);
       drafted++;
     } catch (err) {
