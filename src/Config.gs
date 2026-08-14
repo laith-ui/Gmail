@@ -15,6 +15,7 @@ var CONFIG = {
     { label: 'Skipped/Guesty', domains: ['guesty.com'] },
     { label: 'Skipped/Asana', domains: ['asana.com'] },
     { label: 'Skipped/Rippling', domains: ['rippling.com'] },
+    { label: 'Skipped/Shipping', domains: ['ups.com', 'fedex.com', 'usps.com', 'dhl.com'] },
   ],
 
   // Gmail's own "promotions" category catches most newsletters/marketing mail.
@@ -24,9 +25,12 @@ var CONFIG = {
   // Applied (thread stays in the inbox) when the AI drafts a reply for review.
   NEEDS_REPLY_LABEL: 'Needs-Reply',
 
-  // Senders that look automated; never auto-draft a reply to these even if
-  // they land in the inbox and aren't covered by a skip-inbox rule above.
-  NO_REPLY_PATTERNS: ['no-reply', 'noreply', 'do-not-reply', 'donotreply', 'notifications@', 'notification@'],
+  // Sender keywords that mean "automated, don't draft a reply" even if the
+  // sender isn't covered by a skip-inbox rule above. Checked against the
+  // From address by looksAutomated_() in Main.gs, alongside header-based
+  // signals (List-Unsubscribe, Auto-Submitted) that catch notification mail
+  // from services you haven't explicitly listed anywhere.
+  NO_REPLY_PATTERNS: ['no-reply', 'noreply', 'do-not-reply', 'donotreply', 'notifications@', 'notification@', 'notify@', 'alerts@', 'auto-confirm@'],
 
   // Claude API (key lives in Script Properties, not here - see README).
   CLAUDE_MODEL: 'claude-sonnet-5',

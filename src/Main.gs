@@ -59,6 +59,25 @@ function processNewsletters_() {
 }
 
 /**
+ * True if a message looks automated/transactional rather than something a
+ * human is waiting on a reply to. Combines the sender-keyword list in
+ * Config.gs with two header-based signals that catch notification mail from
+ * services you haven't explicitly listed: List-Unsubscribe (present on
+ * almost all bulk/automated senders) and Auto-Submitted (set by ticketing,
+ * monitoring, and delivery-notification systems per RFC 3834).
+ */
+function looksAutomated_(message) {
+  var from = message.getFrom().toLowerCase();
+  if (CONFIG.NO_REPLY_PATTERNS.some(function (p) { return from.indexOf(p) !== -1; })) return true;
+  if (message.getHeader('List-Unsubscribe')) return true;
+
+  var autoSubmitted = message.getHeader('Auto-Submitted');
+  if (autoSubmitted && autoSubmitted.toLowerCase() !== 'no') return true;
+
+  return false;
+}
+
+/**
  * For inbox threads that aren't covered by a skip rule, aren't already
  * handled, and are actually awaiting a reply from Laith, asks Claude for a
  * draft and attaches it to the thread. Never sends anything - drafts only.
@@ -87,9 +106,7 @@ function processNeedsReplyDrafts_() {
 
       if (last.isDraft()) return; // a draft already exists on this thread
       if (last.getFrom().indexOf(CONFIG.MY_EMAIL) !== -1) return; // Laith already replied
-      if (CONFIG.NO_REPLY_PATTERNS.some(function (p) {
-        return last.getFrom().toLowerCase().indexOf(p) !== -1;
-      })) return;
+      if (looksAutomated_(last)) return;
 
       var threadText = messages
         .slice(-3)
