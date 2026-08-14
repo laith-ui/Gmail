@@ -227,6 +227,23 @@ function processNeedsReplyDrafts_() {
 
       if (last.isDraft()) return; // a draft already exists on this thread
       if (isFromMe_(last)) return; // Laith already replied
+
+      var threadText = buildThreadText_(messages);
+
+      // File EVERY examined thread into the taxonomy - including automated
+      // and sensitive mail that won't get a draft below - so nothing sits in
+      // the inbox unlabeled.
+      if (CONFIG.TAXONOMY_ENABLED) {
+        try {
+          classifyIntoTaxonomy_(threadText, subject).forEach(function (name) {
+            var taxonomyLabel = GmailApp.getUserLabelByName(name);
+            if (taxonomyLabel) thread.addLabel(taxonomyLabel);
+          });
+        } catch (err) {
+          console.error('Taxonomy filing failed for "' + subject + '": ' + err);
+        }
+      }
+
       if (looksAutomated_(last)) return;
 
       if (neverDraft_(last, subject)) {
@@ -234,8 +251,6 @@ function processNeedsReplyDrafts_() {
         console.log('Flagged for manual review (no AI draft): "' + subject + '"');
         return;
       }
-
-      var threadText = buildThreadText_(messages);
 
       if (CONFIG.PRIORITY_ENABLED) {
         try {
@@ -246,17 +261,6 @@ function processNeedsReplyDrafts_() {
           }
         } catch (err) {
           console.error('Priority classification failed for "' + subject + '": ' + err);
-        }
-      }
-
-      if (CONFIG.TAXONOMY_ENABLED) {
-        try {
-          classifyIntoTaxonomy_(threadText, subject).forEach(function (name) {
-            var taxonomyLabel = GmailApp.getUserLabelByName(name);
-            if (taxonomyLabel) thread.addLabel(taxonomyLabel); // never creates - existing labels only
-          });
-        } catch (err) {
-          console.error('Taxonomy filing failed for "' + subject + '": ' + err);
         }
       }
 

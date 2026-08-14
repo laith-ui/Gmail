@@ -121,6 +121,10 @@ var CONFIG = {
   TAXONOMY_INCLUDE_PATTERN: /^[0-9]+\. /,
   TAXONOMY_EXCLUDE_PREFIXES: ['Skipped/', 'Priority/', 'Needs-Reply', 'AI-Processed', 'Draft-Failed', 'Review-No-Draft'],
   TAXONOMY_MAX_LABELS: 2,
+  // When no existing label fits, the classifier may create ONE new sub-label
+  // under an existing numbered top-level category (never a new top-level),
+  // so every thread gets filed and the taxonomy grows deliberately.
+  TAXONOMY_ALLOW_NEW: true,
 
   // Color-coded priority triage, so the inbox can be scanned visually.
   PRIORITY_ENABLED: true,
