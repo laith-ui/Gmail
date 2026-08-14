@@ -65,6 +65,15 @@ var CONFIG = {
   SENT_STYLE_EXAMPLE_COUNT: 3,
   SENT_STYLE_EXAMPLE_CHARS: 1200, // per-example cap, keeps the prompt from ballooning
 
+  // Files threads into the existing Gmail label taxonomy (read live from the
+  // account each run). INCLUDE_PATTERN picks which labels are offered to the
+  // classifier - currently the numbered "1. ..." through "6. ..." tree.
+  // EXCLUDE_PREFIXES keeps the automation's own labels out of the choices.
+  TAXONOMY_ENABLED: true,
+  TAXONOMY_INCLUDE_PATTERN: /^[0-9]+\. /,
+  TAXONOMY_EXCLUDE_PREFIXES: ['Skipped/', 'Priority/', 'Needs-Reply'],
+  TAXONOMY_MAX_LABELS: 2,
+
   // Color-coded priority triage, so the inbox can be scanned visually.
   PRIORITY_ENABLED: true,
   PRIORITY_LABELS: {

@@ -23,6 +23,12 @@ account and does three things on every run:
    priority label so the inbox can be scanned by color:
    `Priority/1-Urgent` (red, needs you today), `Priority/2-Needs-You`
    (amber, awaiting your decision), `Priority/3-FYI` (green, no action).
+5. **Filing into your existing labels** - threads are also filed into your
+   own Gmail label taxonomy (the numbered "1. Executive & Board" ...
+   "6. Admin & Personal Workflow" tree). The label list is read live from
+   your account each run, so renaming/adding labels in Gmail immediately
+   changes where things can be filed; the automation never creates new
+   taxonomy labels, only applies existing ones.
 
 It only ever archives, labels, and drafts. It never deletes, sends, or
 touches anything outside your own mailbox.

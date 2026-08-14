@@ -159,6 +159,17 @@ function processNeedsReplyDrafts_() {
         }
       }
 
+      if (CONFIG.TAXONOMY_ENABLED) {
+        try {
+          classifyIntoTaxonomy_(threadText, thread.getFirstMessageSubject()).forEach(function (name) {
+            var taxonomyLabel = GmailApp.getUserLabelByName(name);
+            if (taxonomyLabel) thread.addLabel(taxonomyLabel); // never creates - existing labels only
+          });
+        } catch (err) {
+          console.error('Taxonomy filing failed for thread "' + thread.getFirstMessageSubject() + '": ' + err);
+        }
+      }
+
       var styleExamples = getWritingStyleExamples_(extractEmail_(last.getFrom()));
 
       var draftBody = draftReplyWithClaude_(
