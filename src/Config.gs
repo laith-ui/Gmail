@@ -33,10 +33,15 @@ var CONFIG = {
   NO_REPLY_PATTERNS: ['no-reply', 'noreply', 'do-not-reply', 'donotreply', 'notifications@', 'notification@', 'notify@', 'alerts@', 'auto-confirm@'],
 
   // Claude API (key lives in Script Properties, not here - see README).
-  CLAUDE_MODEL: 'claude-sonnet-5',
-  CLAUDE_MAX_TOKENS: 800,
-  THREAD_MESSAGE_LOOKBACK: 6, // how many recent messages in the thread to give as context
-  MAX_THREAD_CHARS: 9000, // trims very long threads before sending to the model
+  // Opus is the strongest available model - worth the extra cost/latency for
+  // drafting quality. Drop to 'claude-sonnet-5' if you want faster/cheaper runs.
+  CLAUDE_MODEL: 'claude-opus-5',
+  CLAUDE_MAX_TOKENS: 1200,
+  // Whole threads are sent as context (no longer just the last few messages).
+  // This just bounds pathologically long threads (huge CC chains, mailing
+  // lists) from blowing up the request - keeps the most recent messages,
+  // trimming from the oldest end. ~60k chars is roughly 15k tokens.
+  MAX_THREAD_CHARS: 60000,
 
   MY_EMAIL: Session.getActiveUser().getEmail(),
 };

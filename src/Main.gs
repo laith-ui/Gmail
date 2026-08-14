@@ -128,7 +128,6 @@ function processNeedsReplyDrafts_() {
       if (looksAutomated_(last)) return;
 
       var threadText = messages
-        .slice(-CONFIG.THREAD_MESSAGE_LOOKBACK)
         .map(function (m) { return 'From: ' + m.getFrom() + '\n' + m.getPlainBody(); })
         .join('\n\n---\n\n')
         .slice(-CONFIG.MAX_THREAD_CHARS);
