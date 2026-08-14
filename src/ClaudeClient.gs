@@ -5,9 +5,11 @@
  * `reservationContext`, when present, is a live BigQuery/Guesty lookup of
  * the property's current reservation and entry code - treated as ground
  * truth over anything the model might otherwise guess.
+ * `styleExamples`, when present, is a sample of Laith's own past sent
+ * emails, used purely as a tone/voice reference.
  * Throws if ANTHROPIC_API_KEY isn't configured or the API call fails.
  */
-function draftReplyWithClaude_(threadText, subject, otherRecipients, reservationContext) {
+function draftReplyWithClaude_(threadText, subject, otherRecipients, reservationContext, styleExamples) {
   var apiKey = PropertiesService.getScriptProperties().getProperty('ANTHROPIC_API_KEY');
   if (!apiKey) {
     throw new Error('Missing ANTHROPIC_API_KEY script property. See README for setup.');
@@ -23,6 +25,12 @@ function draftReplyWithClaude_(threadText, subject, otherRecipients, reservation
     ? '\n\n---\nLive reservation data for this property, pulled from Guesty just now. Treat this ' +
       'as ground truth for check-in/checkout dates and entry codes, overriding any dates or codes ' +
       'mentioned earlier in the thread:\n\n' + reservationContext
+    : '';
+
+  var styleNote = styleExamples
+    ? '\n\n---\nExamples of emails Laith has actually sent, for tone and voice reference only - ' +
+      'match his vocabulary, sentence length, greeting/sign-off style, and level of formality. Do ' +
+      'not reuse their content or reference them:\n\n' + styleExamples
     : '';
 
   var payload = {
@@ -51,8 +59,13 @@ function draftReplyWithClaude_(threadText, subject, otherRecipients, reservation
       'parentheses instead. ' +
       'If live reservation data is provided below the thread, use those exact dates/codes rather ' +
       'than anything stated earlier in the thread, and do not mention that the data came from a ' +
-      'lookup or system - just answer as Laith would.',
-    messages: [{ role: 'user', content: 'Subject: ' + subject + '\n\n' + threadText + recipientNote + reservationNote }],
+      'lookup or system - just answer as Laith would. ' +
+      'If examples of Laith\'s past sent emails are provided, mirror his voice: his greeting and ' +
+      'sign-off habits, sentence length, directness, and vocabulary.',
+    messages: [{
+      role: 'user',
+      content: 'Subject: ' + subject + '\n\n' + threadText + recipientNote + reservationNote + styleNote,
+    }],
   };
 
   var response = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', {

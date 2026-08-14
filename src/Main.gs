@@ -117,6 +117,7 @@ function processNeedsReplyDrafts_() {
 
   var needsReplyLabel = getOrCreateLabel_(CONFIG.NEEDS_REPLY_LABEL);
   var drafted = 0;
+  var priorityCounts = {};
 
   threads.forEach(function (thread) {
     try {
@@ -146,7 +147,27 @@ function processNeedsReplyDrafts_() {
         }
       }
 
-      var draftBody = draftReplyWithClaude_(threadText, thread.getFirstMessageSubject(), others, reservationContext);
+      if (CONFIG.PRIORITY_ENABLED) {
+        try {
+          var priority = classifyPriority_(threadText, thread.getFirstMessageSubject());
+          if (priority) {
+            thread.addLabel(getOrCreateLabel_(CONFIG.PRIORITY_LABELS[priority]));
+            priorityCounts[priority] = (priorityCounts[priority] || 0) + 1;
+          }
+        } catch (err) {
+          console.error('Priority classification failed for thread "' + thread.getFirstMessageSubject() + '": ' + err);
+        }
+      }
+
+      var styleExamples = getWritingStyleExamples_(extractEmail_(last.getFrom()));
+
+      var draftBody = draftReplyWithClaude_(
+        threadText,
+        thread.getFirstMessageSubject(),
+        others,
+        reservationContext,
+        styleExamples
+      );
 
       if (others.length) {
         thread.createDraftReplyAll(draftBody);
@@ -161,4 +182,9 @@ function processNeedsReplyDrafts_() {
   });
 
   console.log('Needs-Reply: drafted ' + drafted + ' new repl' + (drafted === 1 ? 'y' : 'ies') + '.');
+
+  var prioritySummary = Object.keys(priorityCounts)
+    .map(function (k) { return priorityCounts[k] + ' ' + k; })
+    .join(', ');
+  if (prioritySummary) console.log('Priority: ' + prioritySummary + '.');
 }

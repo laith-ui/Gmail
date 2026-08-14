@@ -58,5 +58,35 @@ var CONFIG = {
   ],
   BIGQUERY_PROJECT_ID: 'stayloom',
 
+  // Pulls a few of Laith's own past sent emails in as style reference so
+  // drafts sound like him. Prefers prior correspondence with the same
+  // sender, falling back to recent sent mail generally.
+  SENT_STYLE_ENABLED: true,
+  SENT_STYLE_EXAMPLE_COUNT: 3,
+  SENT_STYLE_EXAMPLE_CHARS: 1200, // per-example cap, keeps the prompt from ballooning
+
+  // Color-coded priority triage, so the inbox can be scanned visually.
+  PRIORITY_ENABLED: true,
+  PRIORITY_LABELS: {
+    URGENT: 'Priority/1-Urgent',
+    DECISION: 'Priority/2-Needs-You',
+    FYI: 'Priority/3-FYI',
+  },
+
+  // Gmail only accepts specific hex values for label colors; these are all
+  // from its allowed palette. Applied by applyLabelColors() in Setup.gs.
+  LABEL_COLORS: {
+    'Priority/1-Urgent': { background: '#fb4c2f', text: '#ffffff' }, // red
+    'Priority/2-Needs-You': { background: '#ffad47', text: '#ffffff' }, // amber
+    'Priority/3-FYI': { background: '#16a766', text: '#ffffff' }, // green
+    'Needs-Reply': { background: '#4a86e8', text: '#ffffff' }, // blue
+    'Skipped/Amazon': { background: '#cccccc', text: '#666666' },
+    'Skipped/Guesty': { background: '#cccccc', text: '#666666' },
+    'Skipped/Asana': { background: '#cccccc', text: '#666666' },
+    'Skipped/Rippling': { background: '#cccccc', text: '#666666' },
+    'Skipped/Shipping': { background: '#cccccc', text: '#666666' },
+    'Skipped/Newsletters': { background: '#cccccc', text: '#666666' },
+  },
+
   MY_EMAIL: Session.getActiveUser().getEmail(),
 };

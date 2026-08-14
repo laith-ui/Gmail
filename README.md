@@ -14,10 +14,15 @@ account and does three things on every run:
    Claude, which reads the *entire* thread and writes a draft reply (reply-all
    when others are on the thread) attached directly to it, tagged
    `Needs-Reply`. **Nothing is ever sent automatically** - you still review
-   and hit send yourself. If the email looks like a vendor asking about
-   property access, it first looks up the live reservation and entry code in
-   BigQuery (synced from Guesty) so the draft cites real dates/codes instead
-   of guessing.
+   and hit send yourself. Drafts are matched to your own voice using a sample
+   of your past sent mail (preferring prior correspondence with that same
+   sender). If the email looks like a vendor asking about property access, it
+   first looks up the live reservation and entry code in BigQuery (synced
+   from Guesty) so the draft cites real dates/codes instead of guessing.
+4. **Color-coded priority triage** - each of those threads also gets a
+   priority label so the inbox can be scanned by color:
+   `Priority/1-Urgent` (red, needs you today), `Priority/2-Needs-You`
+   (amber, awaiting your decision), `Priority/3-FYI` (green, no action).
 
 It only ever archives, labels, and drafts. It never deletes, sends, or
 touches anything outside your own mailbox.
@@ -31,6 +36,8 @@ src/
   Labels.gs           - small label helper
   ClaudeClient.gs     - calls the Anthropic API to draft a reply
   ReservationLookup.gs - vendor access-request detection + BigQuery/Guesty lookup
+  WritingStyle.gs     - samples your past sent mail so drafts match your voice
+  Priority.gs         - classifies threads into the color-coded priority buckets
   Main.gs             - the processing phases + the entry point
   Setup.gs            - one-time trigger install/remove helpers
 ```
@@ -94,7 +101,15 @@ In the Apps Script editor:
 3. Re-run `runInboxAutomation` once and accept the additional BigQuery
    OAuth consent prompt.
 
-### 5. Install the recurring trigger
+### 5. Apply the label colors
+
+Select `applyLabelColors` from the function dropdown and click **Run** once.
+This creates the priority labels and colors them (red/amber/green for the
+priority buckets, blue for `Needs-Reply`, grey for the `Skipped/*` labels).
+Colors persist in Gmail, so this only needs re-running if you change
+`LABEL_COLORS` in `Config.gs`.
+
+### 6. Install the recurring trigger
 
 Select `setupTrigger` from the function dropdown and click **Run** once.
 That installs a time-based trigger that calls `runInboxAutomation` every 5
@@ -116,6 +131,12 @@ Everything tunable lives in `Config.gs`:
   6-minute execution limit).
 - `VENDOR_ACCESS_ENABLED` / `VENDOR_ACCESS_KEYWORDS` - turn the reservation
   lookup off, or adjust which phrases trigger it.
+- `SENT_STYLE_ENABLED` / `SENT_STYLE_EXAMPLE_COUNT` - turn voice-matching off,
+  or change how many past sent emails are sampled as reference.
+- `PRIORITY_ENABLED` / `PRIORITY_LABELS` / `LABEL_COLORS` - turn priority
+  triage off, rename the buckets, or recolor any label. Gmail only accepts
+  colors from its own fixed palette, so pick replacements from an existing
+  Gmail label color rather than an arbitrary hex value.
 
 ## Notes on quotas
 
