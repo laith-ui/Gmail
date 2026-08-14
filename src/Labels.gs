@@ -18,7 +18,7 @@ function getOrCreateLabel_(name) {
  */
 function syncLabelColors_() {
   var existing = {};
-  Gmail.Users.Labels.list('me').labels.forEach(function (l) { existing[l.name] = l; });
+  (Gmail.Users.Labels.list('me').labels || []).forEach(function (l) { existing[l.name] = l; });
 
   Object.keys(CONFIG.LABEL_COLORS).forEach(function (name) {
     var color = CONFIG.LABEL_COLORS[name];

@@ -1,7 +1,7 @@
 # Gmail Inbox Automation
 
 A Google Apps Script that runs on a 5-minute timer inside your own Gmail
-account and does three things on every run:
+account and does five things on every run:
 
 1. **Skip-inbox senders** - mail from Amazon, Guesty, Asana, or Rippling is
    labeled (`Skipped/Amazon`, `Skipped/Guesty`, etc.), archived out of the
@@ -11,14 +11,22 @@ account and does three things on every run:
    `Promotions` gets the same treatment under `Skipped/Newsletters`.
 3. **Needs-Reply drafting** - everything else still sitting unread in your
    inbox (that isn't from an obvious no-reply/automated address) gets sent to
-   Claude, which reads the *entire* thread and writes a draft reply (reply-all
-   when others are on the thread) attached directly to it, tagged
-   `Needs-Reply`. **Nothing is ever sent automatically** - you still review
-   and hit send yourself. Drafts are matched to your own voice using a sample
-   of your past sent mail (preferring prior correspondence with that same
-   sender). If the email looks like a vendor asking about property access, it
-   first looks up the live reservation and entry code in BigQuery (synced
-   from Guesty) so the draft cites real dates/codes instead of guessing.
+   Claude, which reads the *entire* thread (quoted duplicates stripped) and
+   writes a draft reply (reply-all when others are on the thread) attached
+   directly to it, tagged `Needs-Reply`. **The script never sends anything**
+   - you still review and hit send yourself - and every draft opens with an
+   `[AI draft - ...]` marker line you delete before sending, so an AI draft
+   can't be mistaken for your own words or fat-fingered out the door.
+   Drafts are matched to your own voice using a sample of your past sent
+   mail (preferring prior correspondence with that same sender). Threads
+   touching legal, HR, insurance, or similar sensitive matters are never
+   drafted at all - they get a red `Review-No-Draft` label instead (see
+   `NEVER_DRAFT_KEYWORDS` / `NEVER_DRAFT_DOMAINS`). If the email looks like
+   a vendor asking about property access, it looks up the live reservation
+   in BigQuery (synced from Guesty) so the draft cites real occupancy dates;
+   entry codes are only ever included for senders whose domain you've
+   explicitly allowlisted in `VENDOR_ACCESS_CODE_DOMAINS` (empty by default
+   = codes never appear in drafts).
 4. **Color-coded priority triage** - each of those threads also gets a
    priority label so the inbox can be scanned by color:
    `Priority/1-Urgent` (red, needs you today), `Priority/2-Needs-You`
@@ -30,8 +38,18 @@ account and does three things on every run:
    changes where things can be filed; the automation never creates new
    taxonomy labels, only applies existing ones.
 
-It only ever archives, labels, and drafts. It never deletes, sends, or
-touches anything outside your own mailbox.
+The code only archives, labels, and drafts - it contains no send or delete
+calls. (Note the honest caveat: the `gmail.modify` OAuth scope it requires
+*would permit* sending, since Google offers no drafts-but-no-send scope.
+"Never sends" is a property of this code, which you can read, not a
+permission boundary enforced by Google.)
+
+Reliability guardrails: a script lock prevents overlapping runs from
+double-drafting; every thread the drafting phase examines is tagged
+`AI-Processed` first, so each thread is handled exactly once (a failed
+draft is labeled `Draft-Failed` and not retried/re-billed forever); and the
+drafting loop stops early rather than hitting Apps Script's 6-minute
+execution kill mid-thread.
 
 ## How it's organized
 
@@ -131,10 +149,19 @@ Everything tunable lives in `Config.gs`:
   newsletters (e.g. add `OR category:social`).
 - `NEEDS_REPLY_LABEL` / `NO_REPLY_PATTERNS` - adjust what counts as
   "needs a reply" vs. an automated sender to ignore.
+- `NEVER_DRAFT_KEYWORDS` / `NEVER_DRAFT_DOMAINS` - **the most important
+  knob.** Threads matching these are never drafted (labeled
+  `Review-No-Draft` instead). Add your law firms, insurers, HR providers,
+  and any other senders whose threads should never contain an AI draft.
+- `VENDOR_ACCESS_CODE_DOMAINS` - the only way an entry/door code can appear
+  in a draft. Empty (the default) means codes never appear; add trusted
+  vendor domains deliberately.
+- `DRAFT_MARKER` - the first line of every AI draft. Set to `''` to disable
+  (not recommended: it's what makes an accidental send obvious).
 - `CLAUDE_MODEL` / `CLAUDE_MAX_TOKENS` - swap models or adjust reply length.
-- `MAX_THREADS_PER_RUN` - raise/lower how many threads each phase handles
-  per 5-minute tick (kept low by default to stay well under Apps Script's
-  6-minute execution limit).
+- `MAX_THREADS_PER_RUN` - drafted threads per 5-minute tick. Each one takes
+  several sequential API calls (~15-30s), and Apps Script kills executions
+  at 6 minutes, so keep this small - a backlog drains across ticks anyway.
 - `VENDOR_ACCESS_ENABLED` / `VENDOR_ACCESS_KEYWORDS` - turn the reservation
   lookup off, or adjust which phrases trigger it.
 - `SENT_STYLE_ENABLED` / `SENT_STYLE_EXAMPLE_COUNT` - turn voice-matching off,
@@ -144,10 +171,18 @@ Everything tunable lives in `Config.gs`:
   colors from its own fixed palette, so pick replacements from an existing
   Gmail label color rather than an arbitrary hex value.
 
+## Testing changes safely
+
+`testOneThread` (in the function dropdown) runs the full drafting pipeline
+on exactly one thread - use it to preview a draft and the labels applied
+after any config change, before the recurring trigger picks the change up.
+
 ## Notes on quotas
 
-Apps Script consumer accounts allow roughly 20,000 Gmail read/write calls and
-20,000 `UrlFetchApp` (external request) calls per day. At 5-minute intervals
-(288 runs/day) with `MAX_THREADS_PER_RUN: 25`, normal inbox volume stays
-comfortably under both limits. If you have a very high-volume inbox, either
-raise the interval in `setupTrigger()` or lower `MAX_THREADS_PER_RUN`.
+The binding constraint on Google Workspace accounts is **total trigger
+runtime** (6 hours/day), not per-call quotas. At 288 runs/day, idle runs
+cost a few seconds each; busy runs are capped by `MAX_THREADS_PER_RUN: 5`
+and the internal 4.5-minute deadline, which keeps a full day comfortably
+inside the budget. If Executions ever shows runs being skipped late in the
+day, widen the trigger interval in `setupTrigger()` (e.g. 10-15 minutes)
+rather than raising the per-run thread count.

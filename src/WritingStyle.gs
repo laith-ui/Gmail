@@ -4,7 +4,13 @@
  * correspondence with the same sender (keeps established rapport/tone
  * consistent); falls back to recent sent mail in general if there's no
  * history with this person.
+ *
+ * Results are cached per execution: the generic fallback is identical for
+ * every thread in a run, and per-sender lookups repeat when several threads
+ * come from the same person - no reason to re-search Gmail each time.
  */
+
+var styleCache_ = {};
 
 /** First email address found in a raw header value, or '' if none. */
 function extractEmail_(headerValue) {
@@ -14,17 +20,20 @@ function extractEmail_(headerValue) {
 
 /** Up to `limit` plain-text bodies of messages Laith actually sent, matching `query`. */
 function collectSentBodies_(query, limit) {
-  var myEmail = CONFIG.MY_EMAIL.toLowerCase();
-  var bodies = [];
+  var myEmail = CONFIG.MY_EMAIL;
+  if (!myEmail) return []; // can't attribute authorship without knowing own address
 
-  GmailApp.search(query, 0, limit).forEach(function (thread) {
-    thread.getMessages().forEach(function (m) {
-      if (bodies.length >= limit) return;
-      if (m.getFrom().toLowerCase().indexOf(myEmail) !== -1) {
-        bodies.push(m.getPlainBody());
+  var bodies = [];
+  var threads = GmailApp.search(query, 0, limit);
+
+  for (var t = 0; t < threads.length && bodies.length < limit; t++) {
+    var messages = threads[t].getMessages();
+    for (var m = 0; m < messages.length && bodies.length < limit; m++) {
+      if (extractEmail_(messages[m].getFrom()).toLowerCase() === myEmail) {
+        bodies.push(stripQuotedText_(messages[m].getPlainBody()));
       }
-    });
-  });
+    }
+  }
 
   return bodies;
 }
@@ -37,16 +46,35 @@ function collectSentBodies_(query, limit) {
 function getWritingStyleExamples_(senderEmail) {
   if (!CONFIG.SENT_STYLE_ENABLED) return '';
 
+  var cacheKey = (senderEmail || '*').toLowerCase();
+  if (styleCache_[cacheKey] !== undefined) return styleCache_[cacheKey];
+
+  var result = '';
   try {
     var examples = senderEmail ? collectSentBodies_('in:sent to:' + senderEmail, CONFIG.SENT_STYLE_EXAMPLE_COUNT) : [];
     if (!examples.length) {
+      // Generic fallback is the same for every thread - compute once per run.
+      if (styleCache_['*'] !== undefined) {
+        styleCache_[cacheKey] = styleCache_['*'];
+        return styleCache_['*'];
+      }
       examples = collectSentBodies_('in:sent', CONFIG.SENT_STYLE_EXAMPLE_COUNT);
+      styleCache_['*'] = joinStyleExamples_(examples);
+      styleCache_[cacheKey] = styleCache_['*'];
+      return styleCache_['*'];
     }
-    return examples
-      .map(function (body) { return body.slice(0, CONFIG.SENT_STYLE_EXAMPLE_CHARS); })
-      .join('\n\n---\n\n');
+    result = joinStyleExamples_(examples);
   } catch (err) {
     console.error('Writing-style lookup failed: ' + err);
-    return '';
+    result = '';
   }
+
+  styleCache_[cacheKey] = result;
+  return result;
+}
+
+function joinStyleExamples_(examples) {
+  return examples
+    .map(function (body) { return body.slice(0, CONFIG.SENT_STYLE_EXAMPLE_CHARS); })
+    .join('\n\n---\n\n');
 }

@@ -14,6 +14,16 @@ function setupTrigger() {
 }
 
 /**
+ * Processes exactly one thread through the full drafting pipeline. Use this
+ * to preview behavior (check the draft it produces and the labels it applies)
+ * before or after config changes, without letting a full run loose.
+ */
+function testOneThread() {
+  CONFIG.MAX_THREADS_PER_RUN = 1;
+  processNeedsReplyDrafts_();
+}
+
+/**
  * Run this once (and again after editing CONFIG.LABEL_COLORS) to create the
  * priority labels and apply their colors. Colors persist in Gmail, so this
  * doesn't need to run on the recurring trigger.
