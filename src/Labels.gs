@@ -39,4 +39,20 @@ function syncLabelColors_() {
       console.error('Could not set color for label "' + name + '": ' + err);
     }
   });
+
+  // Bookkeeping labels: keep them working (search/filtering still sees them)
+  // but hide their chips from the message list so they don't crowd out the
+  // subject line, and tuck them away in the sidebar.
+  CONFIG.HIDDEN_LABELS.forEach(function (name) {
+    try {
+      var label = existing[name] || Gmail.Users.Labels.create({ name: name }, 'me');
+      Gmail.Users.Labels.patch(
+        { name: name, labelListVisibility: 'labelHide', messageListVisibility: 'hide' },
+        'me',
+        label.id
+      );
+    } catch (err) {
+      console.error('Could not hide label "' + name + '": ' + err);
+    }
+  });
 }

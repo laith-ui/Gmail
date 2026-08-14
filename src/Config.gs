@@ -36,6 +36,12 @@ var CONFIG = {
   // guarantees each thread is processed exactly once (success, skip, or fail).
   PROCESSED_LABEL: 'AI-Processed',
 
+  // Pure-bookkeeping labels hidden from the message list (their chips no
+  // longer crowd the subject line) and tucked away in the sidebar. They keep
+  // working for search and the automation's own queries. Applied by
+  // applyLabelColors() in Setup.gs.
+  HIDDEN_LABELS: ['AI-Processed'],
+
   // Applied when the AI drafts a reply for review (thread stays in the inbox).
   NEEDS_REPLY_LABEL: 'Needs-Reply',
 
@@ -120,7 +126,7 @@ var CONFIG = {
   TAXONOMY_ENABLED: true,
   TAXONOMY_INCLUDE_PATTERN: /^[0-9]+\. /,
   TAXONOMY_EXCLUDE_PREFIXES: ['Skipped/', 'Priority/', 'Needs-Reply', 'AI-Processed', 'Draft-Failed', 'Review-No-Draft'],
-  TAXONOMY_MAX_LABELS: 2,
+  TAXONOMY_MAX_LABELS: 1,
   // When no existing label fits, the classifier may create ONE new sub-label
   // under an existing numbered top-level category (never a new top-level),
   // so every thread gets filed and the taxonomy grows deliberately.
