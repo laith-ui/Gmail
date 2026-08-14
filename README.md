@@ -11,9 +11,13 @@ account and does three things on every run:
    `Promotions` gets the same treatment under `Skipped/Newsletters`.
 3. **Needs-Reply drafting** - everything else still sitting unread in your
    inbox (that isn't from an obvious no-reply/automated address) gets sent to
-   Claude, which writes a draft reply attached directly to the thread and
-   tags it `Needs-Reply`. **Nothing is ever sent automatically** - you still
-   review and hit send yourself.
+   Claude, which reads the *entire* thread and writes a draft reply (reply-all
+   when others are on the thread) attached directly to it, tagged
+   `Needs-Reply`. **Nothing is ever sent automatically** - you still review
+   and hit send yourself. If the email looks like a vendor asking about
+   property access, it first looks up the live reservation and entry code in
+   BigQuery (synced from Guesty) so the draft cites real dates/codes instead
+   of guessing.
 
 It only ever archives, labels, and drafts. It never deletes, sends, or
 touches anything outside your own mailbox.
@@ -22,12 +26,13 @@ touches anything outside your own mailbox.
 
 ```
 src/
-  appsscript.json   - manifest: timezone + OAuth scopes
-  Config.gs         - all the tunable settings (senders, labels, model, ...)
-  Labels.gs         - small label helper
-  ClaudeClient.gs   - calls the Anthropic API to draft a reply
-  Main.gs           - the three processing phases + the entry point
-  Setup.gs          - one-time trigger install/remove helpers
+  appsscript.json     - manifest: timezone, OAuth scopes, BigQuery advanced service
+  Config.gs           - all the tunable settings (senders, labels, model, ...)
+  Labels.gs           - small label helper
+  ClaudeClient.gs     - calls the Anthropic API to draft a reply
+  ReservationLookup.gs - vendor access-request detection + BigQuery/Guesty lookup
+  Main.gs             - the processing phases + the entry point
+  Setup.gs            - one-time trigger install/remove helpers
 ```
 
 ## Setup
@@ -69,7 +74,27 @@ dropdown, and click **Run** once. Google will prompt you to authorize the
 Gmail and external-request scopes - accept them. This first run also does an
 immediate pass over your inbox.
 
-### 4. Install the recurring trigger
+### 4. Enable BigQuery access (for vendor access-info lookups)
+
+This step is only needed for the reservation-lookup feature; skip it if you
+don't need that and the rest of the automation works fine without it (a
+lookup failure just falls back to a normal drafted reply).
+
+In the Apps Script editor:
+
+1. Click the **+** next to "Services" in the left sidebar, find **BigQuery
+   API**, and add it (this matches the `enabledAdvancedServices` entry
+   already in `appsscript.json` - if you pushed via clasp it may already show
+   up automatically).
+2. **Project Settings -> Google Cloud Platform (GCP) Project -> Change
+   project**, and enter the project number for `stayloom` (find it in the
+   [Cloud Console](https://console.cloud.google.com) under that project's
+   Dashboard). Your Google account needs BigQuery read access on `stayloom`
+   already (the same access used elsewhere for Guesty/reporting).
+3. Re-run `runInboxAutomation` once and accept the additional BigQuery
+   OAuth consent prompt.
+
+### 5. Install the recurring trigger
 
 Select `setupTrigger` from the function dropdown and click **Run** once.
 That installs a time-based trigger that calls `runInboxAutomation` every 5
@@ -89,6 +114,8 @@ Everything tunable lives in `Config.gs`:
 - `MAX_THREADS_PER_RUN` - raise/lower how many threads each phase handles
   per 5-minute tick (kept low by default to stay well under Apps Script's
   6-minute execution limit).
+- `VENDOR_ACCESS_ENABLED` / `VENDOR_ACCESS_KEYWORDS` - turn the reservation
+  lookup off, or adjust which phrases trigger it.
 
 ## Notes on quotas
 

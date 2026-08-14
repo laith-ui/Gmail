@@ -43,5 +43,20 @@ var CONFIG = {
   // trimming from the oldest end. ~60k chars is roughly 15k tokens.
   MAX_THREAD_CHARS: 60000,
 
+  // Cheap/fast model used only to pull a property reference out of an email -
+  // not for drafting, so it doesn't need Opus-level quality.
+  EXTRACTION_MODEL: 'claude-haiku-4-5-20251001',
+
+  // When an inbox email looks like a vendor asking about property access,
+  // look up the live reservation + entry code in BigQuery (synced from
+  // Guesty) instead of letting the model guess dates or codes.
+  VENDOR_ACCESS_ENABLED: true,
+  VENDOR_ACCESS_KEYWORDS: [
+    'access code', 'gate code', 'door code', 'lock code', 'entry code', 'lockbox',
+    'key code', 'check in', 'check out', 'checkin', 'checkout', 'access the property',
+    'get into the', 'get in to the', 'when can i access',
+  ],
+  BIGQUERY_PROJECT_ID: 'stayloom',
+
   MY_EMAIL: Session.getActiveUser().getEmail(),
 };

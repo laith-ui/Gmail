@@ -2,9 +2,12 @@
  * Sends the recent thread text to Claude and returns a draft reply body.
  * `otherRecipients`, when non-empty, means the draft will go out as a
  * reply-all, so the model is told who else will see it.
+ * `reservationContext`, when present, is a live BigQuery/Guesty lookup of
+ * the property's current reservation and entry code - treated as ground
+ * truth over anything the model might otherwise guess.
  * Throws if ANTHROPIC_API_KEY isn't configured or the API call fails.
  */
-function draftReplyWithClaude_(threadText, subject, otherRecipients) {
+function draftReplyWithClaude_(threadText, subject, otherRecipients, reservationContext) {
   var apiKey = PropertiesService.getScriptProperties().getProperty('ANTHROPIC_API_KEY');
   if (!apiKey) {
     throw new Error('Missing ANTHROPIC_API_KEY script property. See README for setup.');
@@ -15,6 +18,12 @@ function draftReplyWithClaude_(threadText, subject, otherRecipients) {
       ? '\n\n(This reply will go to everyone on the thread, including: ' + otherRecipients.join(', ') + '. ' +
         'Address the group naturally where it reads better than singling out one person.)'
       : '';
+
+  var reservationNote = reservationContext
+    ? '\n\n---\nLive reservation data for this property, pulled from Guesty just now. Treat this ' +
+      'as ground truth for check-in/checkout dates and entry codes, overriding any dates or codes ' +
+      'mentioned earlier in the thread:\n\n' + reservationContext
+    : '';
 
   var payload = {
     model: CONFIG.CLAUDE_MODEL,
@@ -39,8 +48,11 @@ function draftReplyWithClaude_(threadText, subject, otherRecipients) {
       'reply that acknowledges the email and says Laith will follow up with specifics, rather than ' +
       'inventing details. ' +
       'Never use em dashes or en dashes anywhere in the reply - use commas, periods, or ' +
-      'parentheses instead.',
-    messages: [{ role: 'user', content: 'Subject: ' + subject + '\n\n' + threadText + recipientNote }],
+      'parentheses instead. ' +
+      'If live reservation data is provided below the thread, use those exact dates/codes rather ' +
+      'than anything stated earlier in the thread, and do not mention that the data came from a ' +
+      'lookup or system - just answer as Laith would.',
+    messages: [{ role: 'user', content: 'Subject: ' + subject + '\n\n' + threadText + recipientNote + reservationNote }],
   };
 
   var response = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', {

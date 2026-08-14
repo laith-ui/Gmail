@@ -133,7 +133,20 @@ function processNeedsReplyDrafts_() {
         .slice(-CONFIG.MAX_THREAD_CHARS);
 
       var others = otherRecipients_(last);
-      var draftBody = draftReplyWithClaude_(threadText, thread.getFirstMessageSubject(), others);
+
+      var reservationContext = null;
+      if (CONFIG.VENDOR_ACCESS_ENABLED && looksLikeAccessRequest_(last)) {
+        try {
+          var propertyReference = extractPropertyReference_(threadText);
+          if (propertyReference) {
+            reservationContext = lookupReservationAccess_(propertyReference);
+          }
+        } catch (err) {
+          console.error('Reservation lookup failed for thread "' + thread.getFirstMessageSubject() + '": ' + err);
+        }
+      }
+
+      var draftBody = draftReplyWithClaude_(threadText, thread.getFirstMessageSubject(), others, reservationContext);
 
       if (others.length) {
         thread.createDraftReplyAll(draftBody);
