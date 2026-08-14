@@ -38,5 +38,9 @@ function draftReplyWithClaude_(threadText, subject) {
   }
 
   var body = JSON.parse(response.getContentText());
-  return body.content[0].text.trim();
+  var textBlock = (body.content || []).filter(function (block) { return block.type === 'text'; })[0];
+  if (!textBlock || !textBlock.text) {
+    throw new Error('Claude returned no draftable text (stop_reason: ' + body.stop_reason + ').');
+  }
+  return textBlock.text.trim();
 }
