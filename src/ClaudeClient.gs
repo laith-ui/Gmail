@@ -106,7 +106,7 @@ function draftReplyWithClaude_(threadText, subject, otherRecipients, reservation
       'reply that acknowledges the email and says Laith will follow up with specifics, rather than ' +
       'inventing details. ' +
       'Never use em dashes or en dashes anywhere in the reply - use commas, periods, or ' +
-      'parentheses instead. ' +
+      'parentheses instead. Do not include internal or system XML tags in your response. ' +
       'If reservation data is provided in <reservation_data> tags, use those exact dates/codes ' +
       'rather than anything stated in the thread, and do not mention that the data came from a ' +
       'lookup or system - just answer as Laith would. Never include an entry or door code in the ' +
