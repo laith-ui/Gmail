@@ -15,9 +15,10 @@ function draftReplyWithClaude_(threadText, subject) {
       'You draft concise, professional email replies on behalf of Laith. ' +
       'Read the email thread below and write only the body of a reply - no subject line, ' +
       'no signature block, no explanation of what you did. Match a direct, friendly, ' +
-      'professional tone. If the thread does not contain enough information for a real ' +
-      'answer, write a short holding reply that acknowledges the email and says Laith will ' +
-      'follow up with specifics.',
+      'professional tone. Never use em dashes or en dashes anywhere in the reply - use ' +
+      'commas, periods, or parentheses instead. If the thread does not contain enough ' +
+      'information for a real answer, write a short holding reply that acknowledges the ' +
+      'email and says Laith will follow up with specifics.',
     messages: [{ role: 'user', content: 'Subject: ' + subject + '\n\n' + threadText }],
   };
 
@@ -42,5 +43,6 @@ function draftReplyWithClaude_(threadText, subject) {
   if (!textBlock || !textBlock.text) {
     throw new Error('Claude returned no draftable text (stop_reason: ' + body.stop_reason + ').');
   }
-  return textBlock.text.trim();
+  // Belt-and-suspenders: strip any em/en dash the model uses despite the instruction above.
+  return textBlock.text.replace(/[–—]/g, ',').trim();
 }
