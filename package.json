@@ -1,0 +1,15 @@
+{
+  "name": "gmail-inbox-automation",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Google Apps Script automation that triages Laith's Gmail inbox and drafts AI replies.",
+  "scripts": {
+    "login": "clasp login",
+    "create": "clasp create --type standalone --title \"Gmail Inbox Automation\" --rootDir src",
+    "push": "clasp push",
+    "open": "clasp open"
+  },
+  "devDependencies": {
+    "@google/clasp": "^2.4.2"
+  }
+}
