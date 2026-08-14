@@ -22,12 +22,18 @@ function processSkipInboxRules_() {
     if (!threads.length) return;
 
     var label = getOrCreateLabel_(rule.label);
+    var moved = 0;
     threads.forEach(function (thread) {
-      thread.addLabel(label);
-      thread.moveToArchive();
-      thread.markUnread();
+      try {
+        thread.addLabel(label);
+        thread.markUnread();
+        thread.moveToArchive();
+        moved++;
+      } catch (err) {
+        console.error(rule.label + ': failed on thread "' + thread.getFirstMessageSubject() + '": ' + err);
+      }
     });
-    console.log(rule.label + ': moved ' + threads.length + ' thread(s) out of the inbox.');
+    console.log(rule.label + ': moved ' + moved + ' thread(s) out of the inbox.');
   });
 }
 
@@ -38,12 +44,18 @@ function processNewsletters_() {
   if (!threads.length) return;
 
   var label = getOrCreateLabel_(CONFIG.NEWSLETTER_LABEL);
+  var moved = 0;
   threads.forEach(function (thread) {
-    thread.addLabel(label);
-    thread.moveToArchive();
-    thread.markUnread();
+    try {
+      thread.addLabel(label);
+      thread.markUnread();
+      thread.moveToArchive();
+      moved++;
+    } catch (err) {
+      console.error('Newsletters: failed on thread "' + thread.getFirstMessageSubject() + '": ' + err);
+    }
   });
-  console.log('Newsletters: moved ' + threads.length + ' thread(s) out of the inbox.');
+  console.log('Newsletters: moved ' + moved + ' thread(s) out of the inbox.');
 }
 
 /**
