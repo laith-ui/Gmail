@@ -79,10 +79,9 @@ var CONFIG = {
   ],
 
   // Claude API (key lives in Script Properties, not here - see README).
-  // Opus is the strongest available model - worth the extra cost/latency for
-  // drafting quality. Drop to 'claude-sonnet-5' if you want faster/cheaper runs.
-  CLAUDE_MODEL: 'claude-opus-5',
-  CLAUDE_MAX_TOKENS: 1500,
+  // Using Haiku 4.5 for cost efficiency - ~1% the cost of Opus.
+  CLAUDE_MODEL: 'claude-haiku-4-5-20251001',
+  CLAUDE_MAX_TOKENS: 800,
   // De-quoted thread text cap (quoted history is stripped before counting,
   // so this covers nearly all real threads in full). Truncation drops whole
   // messages from the oldest end.
@@ -112,10 +111,8 @@ var CONFIG = {
   BIGQUERY_TIMEZONE: 'America/Chicago', // reservations store local property time
 
   // Pulls a few of Laith's own past sent emails in as style reference so
-  // drafts sound like him. Prefers prior correspondence with the same
-  // sender, falling back to recent sent mail generally. Results are cached
-  // per run so the fallback search doesn't repeat for every thread.
-  SENT_STYLE_ENABLED: true,
+  // drafts sound like him. Disabled with Haiku to save costs - not worth it.
+  SENT_STYLE_ENABLED: false,
   SENT_STYLE_EXAMPLE_COUNT: 3,
   SENT_STYLE_EXAMPLE_CHARS: 1200, // per-example cap, keeps the prompt from ballooning
 
